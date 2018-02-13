@@ -31,6 +31,7 @@ DTYPE_DICT = {
     'ZIP_CODE' : str,
     'TRANSACTION_DT' : str,
 }
+CHUNKSIZE = 100000
 
 def has_input(filepath):
     '''
@@ -59,18 +60,18 @@ def process_stream(in_filepath, percentile, out_filepath):
     recipient_based_history = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     with open(in_filepath) as fp, open(out_filepath, 'w') as op:
-        df = pd.read_csv(fp, sep='|', header=None, names=FEC_COLUMNS, usecols=REQUIRED_COLUMNS, dtype=DTYPE_DICT)
-        print(len(df))
+        chunks = pd.read_csv(fp, sep='|', header=None, names=FEC_COLUMNS, usecols=REQUIRED_COLUMNS, chunksize=CHUNKSIZE, dtype=DTYPE_DICT)
 
-        # filter the row if any of the following conditions hold
-        # any of these subset of fields is empty or,
-        # OTHER_ID is not empty
-        # TRANSACTION_AMT is smaller than zero -> Minus donation?
-        df = df.dropna(subset=['CMTE_ID','NAME','ZIP_CODE','TRANSACTION_DT','TRANSACTION_AMT'])
-        df = df[df['OTHER_ID'].isnull()]
-        df = df[df['TRANSACTION_AMT'] > 0]
+        # iterate over chunks (parts of the input file) due to memory reasons
+        for chunk in chunks:
+            # filter the row if any of the following conditions hold
+            # any of these subset of fields is empty or,
+            # OTHER_ID is not empty
+            # TRANSACTION_AMT is smaller than zero -> Minus donation?
+            chunk = chunk.dropna(subset=['CMTE_ID','NAME','ZIP_CODE','TRANSACTION_DT','TRANSACTION_AMT'])
+            chunk = chunk[chunk['OTHER_ID'].isnull()]
+            chunk = chunk[chunk['TRANSACTION_AMT'] > 0]
 
-        print(len(df))
 
 
     return
