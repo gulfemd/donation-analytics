@@ -13,6 +13,7 @@ from os import path
 from collections import defaultdict
 from datetime import datetime
 import pandas as pd
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +86,20 @@ def get_percentile(in_filepath):
             logger.warn('Percentile file detected, percentile: {}'.format(percentile))
             return int(percentile)
 
+def calculate(percentile, values):
+    '''
+    Calculates and returns three required fields for the output data:
+        running percentile of contributions,
+        total amount of contributions,
+        total number of transactions
+    '''
+    ordinal_rank = math.ceil((percentile / 100) * len(values))
+    percentile_value = round(values[ordinal_rank - 1])
+    total_number = len(values)
+    total_amount = sum(values)
+
+    return [percentile_value, total_amount, total_number]
+
 def process_stream(in_filepath, percentile, out_filepath):
 
     recorded_donors = {}
@@ -112,8 +127,12 @@ def process_stream(in_filepath, percentile, out_filepath):
 
                         logger.warn('REPEAT donor detected: {}'.format(str(row)))
 
+                        to_print = [row.CMTE_ID, zip_code, date.year]
+                        recipient_based_history[row.CMTE_ID][zip_code][date.year].append(row.TRANSACTION_AMT)
+                        to_print += calculate(percentile, recipient_based_history[row.CMTE_ID][zip_code][date.year])
 
-
+                        op.write('|'.join(map(str, to_print)))
+                        op.write('\n')
 
     return
 
