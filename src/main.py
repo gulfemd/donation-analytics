@@ -1,15 +1,34 @@
 '''
 Run:
 
-python3 main.py --stream /Users/gulfemdemir/Developer/donation-analytics-master-older/input/itcont.txt \
---percentile /Users/gulfemdemir/Developer/donation-analytics-master-older/input/percentile.txt \
---out /Users/gulfemdemir/Developer/donation-analytics-master-older/output/repeat_donors.txt
+python3 main.py --stream /Users/gulfemdemir/Developer/donation-analytics/input/itcont.txt \
+--percentile /Users/gulfemdemir/Developer/donation-analytics/input/percentile.txt \
+--out /Users/gulfemdemir/Developer/donation-analytics/output/repeat_donors.txt
 
 '''
 
 from argparse import ArgumentParser
+import logging
+from os import path
 
 logger = logging.getLogger(__name__)
+
+# all fields that will be reported in the input file based on The Federal Election Commission's data dictionary
+FEC_COLUMNS = ['CMTE_ID','AMNDT_IND','RPT_TP','TRANSACTION_PGI','IMAGE_NUM','TRANSACTION_TP','ENTITY_TP','NAME',
+    'CITY','STATE','ZIP_CODE','EMPLOYER','OCCUPATION','TRANSACTION_DT','TRANSACTION_AMT','OTHER_ID','TRAN_ID',
+    'FILE_NUM','MEMO_CD','MEMO_TEXT','SUB_ID']
+# fields that are required for analysis out of above columns
+REQUIRED_COLUMNS = ['CMTE_ID','NAME','ZIP_CODE','TRANSACTION_DT','TRANSACTION_AMT','OTHER_ID']
+
+# constants
+DATE_FORMAT = '%m%d%Y'
+ZIP_CODE_LEN = 5
+DTYPE_DICT = {
+    'CMTE_ID' : str,
+    'NAME' : str,
+    'ZIP_CODE' : str,
+    'TRANSACTION_DT' : str,
+}
 
 def has_input(filepath):
     '''
@@ -36,6 +55,10 @@ def main(args):
     stream_input = args.stream
     percentile = get_percentile(args.percentile)
     output = args.out
+
+    logger.warn('Checking if {} exists...'.format(stream_input))
+    if has_input(stream_input):
+        logger.warn('Input file detected, processing...')
 
     return 1
 
