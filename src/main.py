@@ -11,6 +11,7 @@ from argparse import ArgumentParser
 import logging
 from os import path
 from collections import defaultdict
+from datetime import datetime
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,21 @@ DTYPE_DICT = {
     'TRANSACTION_DT' : str,
 }
 CHUNKSIZE = 100000
+
+def apply_filters(row):
+    '''
+    Filters out the transactions with invalid ZIP_CODE or malformatted TRANSACTION_DT
+    '''
+    zip_code = date = None
+    if len(str(row.ZIP_CODE)) < ZIP_CODE_LEN:
+        return zip_code, date
+    zip_code = str(row.ZIP_CODE)[:ZIP_CODE_LEN]
+    try:
+        date = datetime.strptime(str(row.TRANSACTION_DT), DATE_FORMAT).date()
+    except:
+        return zip_code, date
+
+    return zip_code, date
 
 def has_input(filepath):
     '''
@@ -71,6 +87,12 @@ def process_stream(in_filepath, percentile, out_filepath):
             chunk = chunk.dropna(subset=['CMTE_ID','NAME','ZIP_CODE','TRANSACTION_DT','TRANSACTION_AMT'])
             chunk = chunk[chunk['OTHER_ID'].isnull()]
             chunk = chunk[chunk['TRANSACTION_AMT'] > 0]
+
+            # iterates over each row in the chunk, and checks whether it's repeat_donor or not,
+            # and if so, calculates required values
+            for row in chunk.itertuples():
+                zip_code, date = apply_filters(row)
+                print(zip_code, date)
 
 
 
