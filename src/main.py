@@ -9,10 +9,33 @@ python3 main.py --stream /Users/gulfemdemir/Developer/donation-analytics-master-
 
 from argparse import ArgumentParser
 
+logger = logging.getLogger(__name__)
+
+def has_input(filepath):
+    '''
+    Checks if the file at the given path exists.
+    '''
+    return path.exists(filepath)
+
+def get_percentile(in_filepath):
+    '''
+    Processes the given percentile file.
+    '''
+    logger.warn('Checking if {} exists...'.format(in_filepath))
+
+    if not has_input(in_filepath):
+        logger.error('Could not find {}...'.format(in_filepath))
+        raise IOError('No input file')
+    else:
+        with open(in_filepath) as fp:
+            percentile = fp.readline().strip()
+            logger.warn('Percentile file detected, percentile: {}'.format(percentile))
+            return int(percentile)
+
 def main(args):
-    print(args.stream)
-    print(args.percentile)
-    print(args.out)
+    stream_input = args.stream
+    percentile = get_percentile(args.percentile)
+    output = args.out
 
     return 1
 
