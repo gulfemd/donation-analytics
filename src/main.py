@@ -49,6 +49,21 @@ def apply_filters(row):
 
     return zip_code, date
 
+def is_repeat_donor(row, zip_code, date, recorded_donors):
+    '''
+    Identifies whether given row(transaction) is made by a repeat donor by checking all previously seen donors from recorded_donors dictionary
+    '''
+    donor_id = row.NAME + ' ' + zip_code
+
+    if donor_id in recorded_donors:
+        previous_donation_year = recorded_donors[donor_id]
+
+        if previous_donation_year < date.year:
+            return True
+
+    recorded_donors[donor_id] = date.year
+    return False
+
 def has_input(filepath):
     '''
     Checks if the file at the given path exists.
@@ -92,7 +107,11 @@ def process_stream(in_filepath, percentile, out_filepath):
             # and if so, calculates required values
             for row in chunk.itertuples():
                 zip_code, date = apply_filters(row)
-                print(zip_code, date)
+                if date is not None and zip_code is not None:
+                    if is_repeat_donor(row, zip_code, date, recorded_donors):
+
+                        logger.warn('REPEAT donor detected: {}'.format(str(row)))
+
 
 
 
